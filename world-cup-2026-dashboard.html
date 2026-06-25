@@ -145,6 +145,80 @@
       50% { opacity: 0.3; }
     }
 
+    @keyframes flash {
+      0% { background: rgba(74, 222, 128, 0.45); color: #fff; }
+      100% { background: transparent; color: inherit; }
+    }
+
+    @keyframes scorePop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.6); color: #4ade80; text-shadow: 0 0 12px rgba(74,222,128,0.8); }
+      100% { transform: scale(1); }
+    }
+
+    .flash-cell { animation: flash 0.9s ease-out; border-radius: 3px; }
+    .score-pop { animation: scorePop 0.6s ease-out; display: inline-block; }
+
+    .live-matches {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .live-match {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--rule);
+      border-left: 3px solid var(--status-pending);
+      border-radius: 8px;
+      padding: 12px 14px;
+      transition: border-color 0.3s;
+    }
+    .live-match.goal { border-left-color: var(--status-qualified); }
+    .live-match .lm-head {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.7rem; color: var(--muted); margin-bottom: 8px;
+    }
+    .live-match .lm-minute {
+      font-family: var(--font-display);
+      color: var(--status-pending);
+      font-size: 0.75rem;
+    }
+    .live-match .lm-body {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.95rem; font-weight: 600;
+    }
+    .live-match .lm-team { flex: 1; }
+    .live-match .lm-team.away { text-align: right; }
+    .live-match .lm-score {
+      font-family: var(--font-display);
+      font-size: 1.4rem; color: var(--accent2);
+      padding: 0 14px;
+    }
+
+    .event-flash {
+      position: fixed;
+      top: 20px; right: 20px;
+      background: rgba(10, 31, 10, 0.95);
+      border: 1px solid var(--status-qualified);
+      border-left: 4px solid var(--status-qualified);
+      padding: 12px 18px;
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 0.85rem;
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+      z-index: 1000;
+      transform: translateX(400px);
+      transition: transform 0.4s ease-out;
+      max-width: 320px;
+    }
+    .event-flash.show { transform: translateX(0); }
+    .event-flash .ef-title {
+      color: var(--accent2);
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
     /* Main Content */
     .main-content {
       display: grid;
@@ -441,26 +515,26 @@
           <div class="stat-label">小组数量</div>
         </div>
         <div class="stat-item qualified">
-          <div class="stat-value">7</div>
+          <div class="stat-value" id="stat-qualified">7</div>
           <div class="stat-label">已晋级</div>
         </div>
         <div class="stat-item eliminated">
-          <div class="stat-value">5</div>
+          <div class="stat-value" id="stat-eliminated">5</div>
           <div class="stat-label">已淘汰</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">186</div>
+          <div class="stat-value" id="stat-goals">186</div>
           <div class="stat-label">总进球</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">72</div>
+          <div class="stat-value" id="stat-matches">72</div>
           <div class="stat-label">已赛场次</div>
         </div>
       </div>
 
       <div class="live-indicator">
         <span class="live-dot"></span>
-        <span>数据更新于 2026-06-24</span>
+        <span id="update-time">数据更新于 2026-06-24</span>
       </div>
     </header>
 
@@ -492,18 +566,29 @@
           <h4>晋级规则</h4>
           <p>12个小组前2名(24队) + 8个成绩最佳的小组第3名 = 32强</p>
           <div>
-            <strong style="color:var(--muted);font-size:0.8rem;">已确定晋级(7队):</strong><br>
-            <span class="team-tag">墨西哥</span>
-            <span class="team-tag">美国</span>
-            <span class="team-tag">德国</span>
-            <span class="team-tag">法国</span>
-            <span class="team-tag">挪威</span>
-            <span class="team-tag">阿根廷</span>
-            <span class="team-tag">哥伦比亚</span>
+            <strong style="color:var(--muted);font-size:0.8rem;" id="qualified-label">已确定晋级(7队):</strong><br>
+            <span id="qualified-teams">
+              <span class="team-tag">墨西哥</span>
+              <span class="team-tag">美国</span>
+              <span class="team-tag">德国</span>
+              <span class="team-tag">法国</span>
+              <span class="team-tag">挪威</span>
+              <span class="team-tag">阿根廷</span>
+              <span class="team-tag">哥伦比亚</span>
+            </span>
           </div>
         </div>
       </section>
     </main>
+
+    <!-- Live Events Bar -->
+    <section class="section-panel" style="padding:18px 24px;">
+      <div class="section-header" style="margin-bottom:12px;">
+        <h2>🔴 进行中的比赛</h2>
+        <span style="font-size:0.8rem;color:var(--muted);" id="live-matches-meta">—</span>
+      </div>
+      <div class="live-matches" id="live-matches-container"></div>
+    </section>
 
     <!-- Footer: Schedule -->
     <footer class="schedule-timeline">
@@ -547,11 +632,28 @@
     </footer>
   </div>
 
+  <div class="event-flash" id="event-flash">
+    <div class="ef-title" id="ef-title">进球！</div>
+    <div id="ef-body">—</div>
+  </div>
+
   <script src="./_shared/js/echarts.min.js"></script>
   <script src="assets/charts.js"></script>
   <script>
     (function() {
-      const worldCupData = {
+      // ===========================
+      // 1. 可变状态 (Mutable State)
+      // ===========================
+      const State = {
+        lastUpdate: new Date(),
+        totalGoals: 186,
+        totalMatches: 72,
+        liveMatches: [
+          { id: 'm1', group: 'A', home: '捷克',   away: '南非',     hg: 0, ag: 0, minute: 23, status: 'live' },
+          { id: 'm2', group: 'B', home: '波黑',   away: '卡塔尔',   hg: 1, ag: 0, minute: 67, status: 'live' },
+          { id: 'm3', group: 'C', home: '摩洛哥', away: '海地',     hg: 2, ag: 1, minute: 78, status: 'live' },
+          { id: 'm4', group: 'G', home: '埃及',   away: '伊朗',     hg: 0, ag: 0, minute: 12, status: 'live' }
+        ],
         groups: [
           {
             name: 'A组', status: '末轮待定',
@@ -676,12 +778,60 @@
         ]
       };
 
+      // ===========================
+      // 2. 工具函数
+      // ===========================
+      function findGroup(name) { return State.groups.find(g => g.name === name); }
+      function findTeam(name) {
+        for (const g of State.groups) {
+          const t = g.teams.find(x => x.name === name);
+          if (t) return { group: g, team: t };
+        }
+        return null;
+      }
+
+      // 排名规则：积分 > 净胜球 > 进球数 > 失球数 升序
+      function rankTeams(teams) {
+        const sorted = [...teams].sort((a, b) => {
+          if (b.pts !== a.pts) return b.pts - a.pts;
+          if (b.gd !== a.gd) return b.gd - a.gd;
+          if (b.gf !== a.gf) return b.gf - a.gf;
+          return a.ga - b.ga;
+        });
+        sorted.forEach((t, i) => t.rank = i + 1);
+        return sorted;
+      }
+
+      // 根据排名重新判定状态 (前2=qualified, 前8名第三=third, 其余=pending/eliminated)
+      function updateGroupStatus(group) {
+        const sorted = rankTeams(group.teams);
+        // 简化规则：已赛2场且排名第3-4的球队 -> 末轮待定的 pending/eliminated
+        // 这里我们让"末轮待定"的组，前2=pending, 后2=pending；已完赛的组，前2=qualified, 第3=pending, 第4=eliminated
+        const final = group.status === '已确定';
+        sorted.forEach((t, i) => {
+          if (final) {
+            t.status = i < 2 ? 'qualified' : (i === 2 ? 'pending' : 'eliminated');
+          } else {
+            t.status = 'pending';
+          }
+        });
+      }
+
+      function fmtTime(d) {
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+      }
+
+      // ===========================
+      // 3. 渲染
+      // ===========================
       function renderGroupCards() {
         const container = document.getElementById('groups-container');
-        worldCupData.groups.forEach(group => {
+        container.innerHTML = '';
+        State.groups.forEach((group, gi) => {
           const card = document.createElement('div');
           card.className = 'group-card';
-
+          card.dataset.groupIndex = gi;
           const tableRows = group.teams.map(team => {
             const nameClass = team.status === 'qualified' ? 'team-name-qualified' :
                               team.status === 'eliminated' ? 'team-name-eliminated' : 'team-name-pending';
@@ -689,14 +839,14 @@
               <tr>
                 <td class="rank-${team.rank}">${team.rank}</td>
                 <td class="team-cell"><span class="${nameClass}">${team.name}</span></td>
-                <td>${team.p}</td>
-                <td>${team.w}</td>
-                <td>${team.d}</td>
-                <td>${team.l}</td>
-                <td>${team.gf}</td>
-                <td>${team.ga}</td>
-                <td>${team.gd > 0 ? '+' : ''}${team.gd}</td>
-                <td style="font-weight:700;color:var(--accent2)">${team.pts}</td>
+                <td data-team="${team.name}" data-field="p">${team.p}</td>
+                <td data-team="${team.name}" data-field="w">${team.w}</td>
+                <td data-team="${team.name}" data-field="d">${team.d}</td>
+                <td data-team="${team.name}" data-field="l">${team.l}</td>
+                <td data-team="${team.name}" data-field="gf">${team.gf}</td>
+                <td data-team="${team.name}" data-field="ga">${team.ga}</td>
+                <td data-team="${team.name}" data-field="gd">${team.gd > 0 ? '+' : ''}${team.gd}</td>
+                <td data-team="${team.name}" data-field="pts" style="font-weight:700;color:var(--accent2)">${team.pts}</td>
               </tr>
             `;
           }).join('');
@@ -721,7 +871,242 @@
         });
       }
 
+      function renderHeader() {
+        const qualified = State.groups.flatMap(g => g.teams.filter(t => t.status === 'qualified'));
+        const eliminated = State.groups.flatMap(g => g.teams.filter(t => t.status === 'eliminated'));
+        const qEl = document.getElementById('stat-qualified');
+        const eEl = document.getElementById('stat-eliminated');
+        const gEl = document.getElementById('stat-goals');
+        const mEl = document.getElementById('stat-matches');
+        if (qEl) qEl.textContent = qualified.length;
+        if (eEl) eEl.textContent = eliminated.length;
+        if (gEl) gEl.textContent = State.totalGoals;
+        if (mEl) mEl.textContent = State.totalMatches;
+
+        // 晋级球队标签
+        const ql = document.getElementById('qualified-label');
+        const qt = document.getElementById('qualified-teams');
+        if (ql) ql.textContent = `已确定晋级(${qualified.length}队):`;
+        if (qt) qt.innerHTML = qualified.map(t => `<span class="team-tag">${t.name}</span>`).join('') || '<span style="color:var(--muted);font-size:0.8rem;">暂无</span>';
+
+        const tEl = document.getElementById('update-time');
+        if (tEl) tEl.textContent = `数据更新于 ${fmtTime(State.lastUpdate)}`;
+      }
+
+      function renderLiveMatches() {
+        const c = document.getElementById('live-matches-container');
+        const m = document.getElementById('live-matches-meta');
+        if (!c) return;
+        if (State.liveMatches.length === 0) {
+          c.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px;">当前没有进行中的比赛</div>';
+          if (m) m.textContent = '';
+          return;
+        }
+        c.innerHTML = State.liveMatches.map((mt, i) => {
+          const scoreClass = mt.justScored ? 'goal' : '';
+          return `
+            <div class="live-match ${scoreClass}" data-mid="${mt.id}">
+              <div class="lm-head">
+                <span>${mt.group} · 小组赛</span>
+                <span class="lm-minute">${mt.minute}'</span>
+              </div>
+              <div class="lm-body">
+                <span class="lm-team">${mt.home}</span>
+                <span class="lm-score" data-mid="${mt.id}" data-side="home">${mt.hg}</span>
+                <span style="color:var(--muted);font-size:0.85rem;">:</span>
+                <span class="lm-score" data-mid="${mt.id}" data-side="away">${mt.ag}</span>
+                <span class="lm-team away">${mt.away}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+        if (m) m.textContent = `${State.liveMatches.length} 场进行中 · 数据每 ${LiveEngine.tickSec} 秒刷新`;
+        // 清除高亮标记
+        State.liveMatches.forEach(mt => mt.justScored = false);
+      }
+
+      function flashCell(groupIndex, teamName, field, newValue) {
+        const card = document.querySelector(`.group-card[data-group-index="${groupIndex}"]`);
+        if (!card) return;
+        const cell = card.querySelector(`td[data-team="${teamName}"][data-field="${field}"]`);
+        if (!cell) return;
+        cell.textContent = newValue;
+        cell.classList.remove('flash-cell');
+        void cell.offsetWidth; // 强制重排，重新触发动画
+        cell.classList.add('flash-cell');
+      }
+
+      function showEvent(title, body) {
+        const el = document.getElementById('event-flash');
+        document.getElementById('ef-title').textContent = title;
+        document.getElementById('ef-body').textContent = body;
+        el.classList.add('show');
+        clearTimeout(showEvent._t);
+        showEvent._t = setTimeout(() => el.classList.remove('show'), 3500);
+      }
+
+      // ===========================
+      // 4. 实时引擎
+      // ===========================
+      const LiveEngine = {
+        tickSec: 4,
+
+        start() {
+          this.updateTimestamp();
+          setInterval(() => this.updateTimestamp(), 1000);
+          setInterval(() => this.simulateMatch(), this.tickSec * 1000);
+          setInterval(() => this.maybeFinalizeGroup(), 20000);
+          setInterval(() => this.maybeStartNewMatch(), 30000);
+        },
+
+        updateTimestamp() {
+          State.lastUpdate = new Date();
+          const tEl = document.getElementById('update-time');
+          if (tEl) tEl.textContent = `数据更新于 ${fmtTime(State.lastUpdate)}`;
+        },
+
+        // 模拟某场比赛进 1 球
+        simulateMatch() {
+          const live = State.liveMatches.filter(m => m.status === 'live' && m.minute < 90);
+          if (live.length === 0) return;
+          const m = live[Math.floor(Math.random() * live.length)];
+          m.minute = Math.min(90, m.minute + Math.floor(Math.random() * 3) + 1);
+
+          // 进球概率 35%
+          if (Math.random() < 0.35) {
+            const isHome = Math.random() < 0.5;
+            if (isHome) m.hg++; else m.ag++;
+            m.justScored = true;
+            const scorer = isHome ? m.home : m.away;
+            const minute = m.minute;
+            showEvent('⚽ 进球！', `${minute}' ${scorer} 破门！${m.home} ${m.hg} - ${m.ag} ${m.away}`);
+            State.totalGoals++;
+            // 同步到 group standings
+            this.applyGoalToStandings(m, isHome);
+          } else if (Math.random() < 0.15) {
+            // 黄牌/红牌等事件
+            const team = Math.random() < 0.5 ? m.home : m.away;
+            const isRed = Math.random() < 0.2;
+            showEvent(isRed ? '🟥 红牌' : '🟨 黄牌', `${m.minute}' ${team} 球员${isRed ? '被红牌罚下' : '吃到黄牌'}`);
+          }
+          renderLiveMatches();
+        },
+
+        // 把进球数据写入对应小组的积分榜
+        applyGoalToStandings(m, isHome) {
+          const scorer = isHome ? m.home : m.away;
+          const conceded = isHome ? m.away : m.home;
+          const a = findTeam(scorer), b = findTeam(conceded);
+          if (!a || !b) return;
+          a.team.gf++;
+          b.team.ga++;
+          a.team.gd = a.team.gf - a.team.ga;
+          b.team.gd = b.team.gf - b.team.ga;
+          flashCell(State.groups.indexOf(a.group), scorer, 'gf', a.team.gf);
+          flashCell(State.groups.indexOf(a.group), scorer, 'gd', (a.team.gd > 0 ? '+' : '') + a.team.gd);
+          flashCell(State.groups.indexOf(b.group), conceded, 'ga', b.team.ga);
+          flashCell(State.groups.indexOf(b.group), conceded, 'gd', (b.team.gd > 0 ? '+' : '') + b.team.gd);
+        },
+
+        // 完赛一场比赛，更新胜平负+积分
+        maybeFinalizeGroup() {
+          const candidates = State.liveMatches.filter(m => m.minute >= 90);
+          if (candidates.length === 0) return;
+          const m = candidates[Math.floor(Math.random() * candidates.length)];
+          this.finalizeMatch(m);
+        },
+
+        finalizeMatch(m) {
+          const a = findTeam(m.home), b = findTeam(m.away);
+          if (!a || !b) return;
+          a.team.p++; b.team.p++;
+          if (m.hg > m.ag) {
+            a.team.w++; a.team.pts += 3; b.team.l++;
+          } else if (m.hg < m.ag) {
+            b.team.w++; b.team.pts += 3; a.team.l++;
+          } else {
+            a.team.d++; b.team.d++; a.team.pts++; b.team.pts++;
+          }
+          updateGroupStatus(a.group);
+          // 重新渲染该组
+          this.rebuildGroup(a.group);
+          // 移除这场比赛
+          State.liveMatches = State.liveMatches.filter(x => x.id !== m.id);
+          State.totalMatches++;
+          showEvent('🏁 比赛结束', `${m.home} ${m.hg}-${m.ag} ${m.away} 已完赛`);
+          renderLiveMatches();
+          renderHeader();
+        },
+
+        rebuildGroup(group) {
+          const gi = State.groups.indexOf(group);
+          const card = document.querySelector(`.group-card[data-group-index="${gi}"]`);
+          if (!card) return;
+          const sorted = rankTeams(group.teams);
+          group.teams = sorted; // 已是已排序引用
+          // 重新生成表格行
+          const tbody = card.querySelector('tbody');
+          tbody.innerHTML = sorted.map(team => {
+            const nameClass = team.status === 'qualified' ? 'team-name-qualified' :
+                              team.status === 'eliminated' ? 'team-name-eliminated' : 'team-name-pending';
+            return `
+              <tr>
+                <td class="rank-${team.rank}">${team.rank}</td>
+                <td class="team-cell"><span class="${nameClass}">${team.name}</span></td>
+                <td data-team="${team.name}" data-field="p">${team.p}</td>
+                <td data-team="${team.name}" data-field="w">${team.w}</td>
+                <td data-team="${team.name}" data-field="d">${team.d}</td>
+                <td data-team="${team.name}" data-field="l">${team.l}</td>
+                <td data-team="${team.name}" data-field="gf">${team.gf}</td>
+                <td data-team="${team.name}" data-field="ga">${team.ga}</td>
+                <td data-team="${team.name}" data-field="gd">${team.gd > 0 ? '+' : ''}${team.gd}</td>
+                <td data-team="${team.name}" data-field="pts" style="font-weight:700;color:var(--accent2)">${team.pts}</td>
+              </tr>
+            `;
+          }).join('');
+        },
+
+        maybeStartNewMatch() {
+          if (State.liveMatches.length >= 4) return;
+          // 找一组"进行中"的小组，挑其中一支还没踢的对手
+          const inProgressGroups = State.groups.filter(g => g.status === '进行中' || g.status === '末轮待定');
+          if (inProgressGroups.length === 0) return;
+          const g = inProgressGroups[Math.floor(Math.random() * inProgressGroups.length)];
+          // 选两支已经踢过2场(p>=2)且不在当前 liveMatches 里的球队
+          const candidates = g.teams.filter(t => t.p >= 2);
+          if (candidates.length < 2) return;
+          const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+          const home = shuffled[0], away = shuffled[1];
+          const id = 'm' + (Date.now() % 100000);
+          State.liveMatches.push({
+            id, group: g.name, home: home.name, away: away.name,
+            hg: 0, ag: 0, minute: 1, status: 'live'
+          });
+          showEvent('🆕 新比赛开始', `${g.name} ${home.name} vs ${away.name} 鸣哨开球`);
+          renderLiveMatches();
+        }
+      };
+
+      // ===========================
+      // 5. 暴露数据更新钩子 (可对接真实API)
+      // ===========================
+      window.WorldCupLive = {
+        getState: () => State,
+        // 真实数据源接入示例:
+        // fetchFromAPI: async function() {
+        //   const res = await fetch('https://api.example.com/matches');
+        //   const data = await res.json();
+        //   // 把 data 合并进 State，然后调用 renderHeader() / renderLiveMatches()
+        // }
+      };
+
+      // ===========================
+      // 6. 初始化
+      // ===========================
       renderGroupCards();
+      renderHeader();
+      renderLiveMatches();
+      LiveEngine.start();
     })();
   </script>
 </body>
